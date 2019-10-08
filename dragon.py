@@ -22,6 +22,7 @@ def _get_package_path(name):
 class Dragon:
     static_path = '/static'
     response_class = Response
+    root_path = None
 
     def __init__(self, package_name):
         self.package_name = package_name
@@ -85,3 +86,10 @@ class Dragon:
 
     def render_template(self, template_name, **context):
         return self.jinja_env.get_template(template_name).render(context)
+
+    def test_client(self):
+        """Creates a test client for this application.  For information
+        about unit testing head over to :ref:`testing`.
+        """
+        from werkzeug import Client
+        return Client(self, self.response_class, use_cookies=True)
