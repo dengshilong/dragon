@@ -1,23 +1,46 @@
+import os
+import sys
+
 from jinja2 import Environment, select_autoescape, PackageLoader
 from werkzeug import Request, Response as ResponseBase
+from werkzeug.middleware.shared_data import SharedDataMiddleware
 from werkzeug.routing import Map, Rule
 
 
 class Response(ResponseBase):
     default_mimetype = "text/html"
 
+
+def _get_package_path(name):
+    """Returns the path to a package or cwd if that cannot be found."""
+    try:
+        return os.path.abspath(os.path.dirname(sys.modules[name].__file__))
+    except (KeyError, AttributeError):
+        return os.getcwd()
+
+
 class Dragon:
+    static_path = '/static'
+    response_class = Response
 
     def __init__(self, package_name):
         self.package_name = package_name
         self.url_map = Map()
         self.view_functions = {}
-        self.response_class = Response
         self.jinja_options = {
             'autoescape': select_autoescape(['html', 'xml'])
         }
         self.jinja_env = Environment(loader=self.create_jinja_loader(),
                                      **self.jinja_options)
+
+        self.root_path = _get_package_path(package_name)
+        if self.static_path is not None:
+            self.url_map.add(Rule(self.static_path + '/<filename>',
+                                  build_only=True, endpoint='static'))
+            target = os.path.join(self.root_path, 'static')
+            self.wsgi_app = SharedDataMiddleware(self.wsgi_app, {
+                self.static_path: target
+            })
 
     def __call__(self, environ, start_response):
         return self.wsgi_app(environ, start_response)
