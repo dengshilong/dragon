@@ -1,7 +1,12 @@
+from werkzeug import Request, Response
+
+
 class Dragon:
 
     def __call__(self, environ, start_response):
-        response_body = b"Hello, World!"
-        status = "200 OK"
-        start_response(status, response_headers=[])
-        return iter([response_body])
+        return self.wsgi_app(environ, start_response)
+
+    def wsgi_app(self, environ, start_response):
+        request = Request(environ)
+        response = Response('Hello, World')
+        return response(environ, start_response)
