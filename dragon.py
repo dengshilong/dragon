@@ -1,13 +1,23 @@
-from werkzeug import Request, Response
+from jinja2 import Environment, select_autoescape, PackageLoader
+from werkzeug import Request, Response as ResponseBase
 from werkzeug.routing import Map, Rule
 
 
+class Response(ResponseBase):
+    default_mimetype = "text/html"
+
 class Dragon:
 
-    def __init__(self):
+    def __init__(self, package_name):
+        self.package_name = package_name
         self.url_map = Map()
         self.view_functions = {}
         self.response_class = Response
+        self.jinja_options = {
+            'autoescape': select_autoescape(['html', 'xml'])
+        }
+        self.jinja_env = Environment(loader=self.create_jinja_loader(),
+                                     **self.jinja_options)
 
     def __call__(self, environ, start_response):
         return self.wsgi_app(environ, start_response)
@@ -46,3 +56,9 @@ class Dragon:
             self.view_functions[f.__name__] = f
             return f
         return decorator
+
+    def create_jinja_loader(self):
+        return PackageLoader(self.package_name)
+
+    def render_template(self, template_name, **context):
+        return self.jinja_env.get_template(template_name).render(context)

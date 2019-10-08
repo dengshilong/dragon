@@ -1,6 +1,6 @@
 from dragon import Dragon
 
-app = Dragon()
+app = Dragon(__name__)
 
 
 @app.route('/user/<username>')
@@ -10,7 +10,7 @@ def show_user(username):
 
 @app.route('/book/<bookname>')
 def show_book(bookname):
-    return f'This is {bookname}'
+    return app.render_template('book.html', **{'bookname': bookname})
 
 
 if __name__ == '__main__':
